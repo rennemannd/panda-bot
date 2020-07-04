@@ -3,15 +3,18 @@ using System.IO;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Discord;
-using Discord.Commands;
 using Discord.WebSocket;
 
 namespace PandaBot
 {
     public class Startup
     {
+        #region vairable delcarations
+        
         private readonly DiscordSocketClient _client;
         private readonly string _token;
+        
+        #endregion
         
         public Startup(string[] args)
         {
@@ -20,6 +23,7 @@ namespace PandaBot
             
             _token = JsonConvert.DeserializeObject<dynamic>(File.ReadAllText("config.json")).Token;
         }
+        
         public static async Task RunAsync(string[] args)
         {
             var startup = new Startup(args);
