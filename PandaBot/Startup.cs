@@ -1,48 +1,50 @@
 using System;
 using System.IO;
+using System.Security.Authentication.ExtendedProtection;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Discord;
+using Discord.Commands;
 using Discord.WebSocket;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace PandaBot
 {
     public class Startup
     {
-        #region vairable delcarations
-        
-        private readonly DiscordSocketClient _client;
-        private readonly string _token;
-        
-        #endregion
-        
-        public Startup(string[] args)
-        {
-            _client = new DiscordSocketClient();
-            _client.Log += Log;
-            
-            _token = JsonConvert.DeserializeObject<dynamic>(File.ReadAllText("config.json")).Token;
-        }
-        
         public static async Task RunAsync(string[] args)
         {
-            var startup = new Startup(args);
+            var startup = new Startup();
             await startup.RunAsync();
         }
 
         public async Task RunAsync()
         {
-            await _client.LoginAsync(TokenType.Bot, _token);
-            await _client.StartAsync();
-            
-            // Block this task until the program is closed.
+            var services = new ServiceCollection();
+            ConfigureServices(services);
+
+            var provider = services.BuildServiceProvider();
+            provider.GetRequiredService<Services.CommandHandler>();
+
+            await provider.GetRequiredService<Services.StartupService>().StartAsync();
             await Task.Delay(-1);
         }
 
-        private Task Log(LogMessage message)
+        private void ConfigureServices(IServiceCollection services)
         {
-            Console.WriteLine(message.ToString());
-            return Task.CompletedTask;
+            services.AddSingleton(new DiscordSocketClient(new DiscordSocketConfig        // adding discord to collection
+            {
+                LogLevel = LogSeverity.Verbose,
+                MessageCacheSize = 1000
+            }))
+                .AddSingleton(new CommandService(new CommandServiceConfig        // adding command service to collection
+            {
+                LogLevel = LogSeverity.Verbose,
+                DefaultRunMode = RunMode.Async        // forces commands to run async
+            }))
+                .AddSingleton<Services.CommandHandler>()
+                .AddSingleton<Services.StartupService>()
+                .AddSingleton<Random>();
         }
     }
 }

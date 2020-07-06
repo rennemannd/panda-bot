@@ -1,3 +1,4 @@
+using System;
 using System.Reflection;
 using System.Threading.Tasks;
 using Discord;
@@ -10,24 +11,19 @@ namespace PandaBot.Services
     {
         #region variable declarations
         
-        private readonly DiscordSocketClient _client;
+        private readonly DiscordSocketClient _discord;
         private readonly CommandService _commands;
-        
+        private readonly IServiceProvider _provider;
+
         #endregion
 
-        public CommandHandler(DiscordSocketClient client, CommandService commands)
+        public CommandHandler(DiscordSocketClient discord, CommandService commands, IServiceProvider provider)
         {
             _commands = commands;
-            _client = client;
-        }
+            _discord = discord;
+            _provider = provider;
 
-        public async Task InstallCommandsAsync()
-        {
-            _client.MessageReceived += HandleCommandAsync;
-
-            // Discovers all command modules in entry assembly and loads
-            await _commands.AddModulesAsync(assembly: Assembly.GetEntryAssembly(),
-                services: null);
+            _discord.MessageReceived += HandleCommandAsync;
         }
 
         private async Task HandleCommandAsync(SocketMessage messageParam)
@@ -38,15 +34,18 @@ namespace PandaBot.Services
 
             // Number to track where the prefix ends and the command begins.
             int argPos = 0;
-
+            var context = new SocketCommandContext(_discord, message);
+            
             // Determines if message is command and user is not a bot.
             if (!(message.HasCharPrefix('!', ref argPos) ||
-                  message.HasMentionPrefix(_client.CurrentUser, ref argPos)) || message.Author.IsBot) return;
+                  message.HasMentionPrefix(_discord.CurrentUser, ref argPos)) || message.Author.IsBot) return;
 
-            var context = new SocketCommandContext(_client, message);
+            // Executes command in command context, also provides service provider for precondition checks.
+            var result = await _commands.ExecuteAsync(context, argPos, _provider);
 
-            // Executes command in comand context, also provides service provider for precondition checks.
-            await _commands.ExecuteAsync(context: context, argPos: argPos, services: null);
+            // replies with error if not successful
+            if (!result.IsSuccess)
+                await context.Channel.SendMessageAsync(result.ToString());
         }
 
     }
