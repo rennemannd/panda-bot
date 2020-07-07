@@ -5,7 +5,7 @@ using Discord.WebSocket;
 
 namespace PandaBot.Modules
 {
-    [Group("sample")]
+    [Name("Sample")]
     public class SampleModule : ModuleBase<SocketCommandContext>
     {
         [Command("square")]

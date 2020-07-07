@@ -6,15 +6,24 @@ using Newtonsoft.Json;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace PandaBot
 {
     public class Startup
     {
+        public IConfigurationRoot Configuration { get; }
+
+        public Startup(string[] args)
+        {
+            var builder = new ConfigurationBuilder();
+            Configuration = builder.Build();
+        }
+        
         public static async Task RunAsync(string[] args)
         {
-            var startup = new Startup();
+            var startup = new Startup(args);
             await startup.RunAsync();
         }
 
@@ -44,7 +53,8 @@ namespace PandaBot
             }))
                 .AddSingleton<Services.CommandHandler>()
                 .AddSingleton<Services.StartupService>()
-                .AddSingleton<Random>();
+                .AddSingleton<Random>()
+                .AddSingleton(Configuration);
         }
     }
 }
