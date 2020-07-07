@@ -1,6 +1,4 @@
 using System;
-using System.IO;
-using System.Security.Authentication.ExtendedProtection;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Discord;
